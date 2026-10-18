@@ -127,7 +127,7 @@ print(resp.choices[0].message.content)
 ```bash
 docker run -d --name agent3api --restart unless-stopped \
   -p 3077:3077 -v ./data:/data \
-  funwukong/agent3api:latest
+  ghcr.io/funwukong/agent3api:latest
 ```
 
 브라우저에서 `http://<호스트>:3077`를 열면 첫 방문 시 **관리자 계정 등록**으로 안내합니다. 로그인 후 "게이트웨이 키" 페이지에서 클라이언트용 API 키를 만들면 됩니다 — `http://<호스트>:3077/v1`이 OpenAI 호환 엔드포인트이며, 키를 만들기 전에는 전달을 거부합니다. 모든 상태(SQLite 데이터베이스 / 설정 / 로그)는 `./data` 볼륨 하나에 저장됩니다.
@@ -137,7 +137,7 @@ compose 사용자용(amd64 / arm64 이미지 모두 제공):
 ```yaml
 services:
   agent3api:
-    image: funwukong/agent3api:latest
+    image: ghcr.io/funwukong/agent3api:latest
     container_name: agent3api
     restart: unless-stopped
     ports:
@@ -159,6 +159,8 @@ services:
 | `WORKBUDDY_UPDATE_REPO` + `WORKBUDDY_UPDATE_API_BASE` | 심화: "업데이트 확인 / 업데이트 다운로드"를 자체 소스로 교체합니다. 전자는 저장소를 바꾸고(기본값은 이 fork 자체의 `funwukong/agent3api`), 후자는 API 루트를 바꿉니다(기본 `https://api.github.com`, GitHub와 같은 형태의 release JSON을 반환해야 함). 자체 소스 설정 후 다운로드 허용 목록은 **그 소스 자신의 호스트**만 추가로 허용합니다(스킴은 소스를 따름: `http://`를 설정하면 평문 다운로드도 허용. 로컬 연습 / 내부 미러용) |
 
 소스에서 빌드하려면: 이 저장소를 클론한 뒤 `docker compose up -d --build`(이미지에는 게이트웨이와 패널만 들어가며 Rust 도구 체인은 포함되지 않습니다).
+
+이미지는 GitHub Actions가 빌드해 GHCR(`ghcr.io/funwukong/agent3api`)에 게시합니다. amd64 / arm64 멀티 아키텍처입니다. 인증은 Actions 내장 `GITHUB_TOKEN`을 사용하므로 Docker Hub secret이 필요하지 않습니다. **GHCR의 새 패키지는 기본적으로 비공개**입니다. 첫 푸시 후 [패키지 설정](https://github.com/users/funwukong/packages/container/agent3api/settings)에서 Visibility를 Public으로 바꾸세요. 그렇지 않으면 다른 사람이 pull할 때 403이 발생합니다. 자기 컴퓨터에서만 쓸 경우 `docker login ghcr.io`로 충분합니다.
 
 **웹 패널 기능 차이**(이 PC에 데스크톱 클라이언트가 없음에서 비롯됩니다): 웹 로그인(WorkBuddy / Qoder / Cline), SMS 인증 코드, 자격 증명 붙여넣기는 완전히 사용 가능합니다. 이 PC 콜백이 필요한 웹 로그인(AutoClaw / CatPaw / Accio / CodeArts / Trae)과 "이 PC 로그인 상태 가져오기"는 사용할 수 없으니 자격 증명 붙여넣기를 쓰세요.
 

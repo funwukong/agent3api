@@ -127,7 +127,7 @@ By default the gateway only listens on `127.0.0.1`. After turning on "Settings �
 ```bash
 docker run -d --name agent3api --restart unless-stopped \
   -p 3077:3077 -v ./data:/data \
-  funwukong/agent3api:latest
+  ghcr.io/funwukong/agent3api:latest
 ```
 
 Open `http://<host>:3077` in a browser — the first visit walks you through **registering the admin account**; log in and create an API key in the "Gateway Keys" page for your clients — `http://<host>:3077/v1` is the OpenAI-compatible endpoint (it refuses to forward until the first key exists). All state (SQLite database / config / logs) lives in the `./data` volume.
@@ -137,7 +137,7 @@ Compose users (images are published for amd64 and arm64):
 ```yaml
 services:
   agent3api:
-    image: funwukong/agent3api:latest
+    image: ghcr.io/funwukong/agent3api:latest
     container_name: agent3api
     restart: unless-stopped
     ports:
@@ -159,6 +159,8 @@ Environment variables (all optional):
 | `WORKBUDDY_UPDATE_REPO` + `WORKBUDDY_UPDATE_API_BASE` | Advanced: point update checks/downloads at your own source. The first swaps the repository (defaults to this fork's own `funwukong/agent3api`), the second swaps the API root (default `https://api.github.com`, must return a GitHub-shaped release JSON). With a custom source set, the download allowlist additionally admits only **that source's own host** (scheme follows the source: an `http://` source also allows plaintext downloads — for local drills / internal mirrors only) |
 
 Build from source: clone the repo and run `docker compose up -d --build` (the image contains only the gateway and the panel, no Rust toolchain).
+
+The image is built by GitHub Actions and published to GHCR (`ghcr.io/funwukong/agent3api`), multi-arch amd64 / arm64. Authentication uses the built-in `GITHUB_TOKEN`, so no Docker Hub secret is needed. **New GHCR packages are private by default**: after the first push, set Visibility to Public in the [package settings](https://github.com/users/funwukong/packages/container/agent3api/settings), otherwise other people's pulls get a 403; for your own machine, `docker login ghcr.io` is enough.
 
 **Web panel capability notes** (all stem from having no local desktop client): web login (WorkBuddy / Qoder / Cline), SMS codes and pasted credentials work fully; web logins that need a callback on this machine (AutoClaw / CatPaw / Accio / CodeArts / Trae) and "import desktop login state" are unavailable — use pasted credentials instead.
 

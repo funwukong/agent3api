@@ -127,7 +127,7 @@ print(resp.choices[0].message.content)
 ```bash
 docker run -d --name agent3api --restart unless-stopped \
   -p 3077:3077 -v ./data:/data \
-  funwukong/agent3api:latest
+  ghcr.io/funwukong/agent3api:latest
 ```
 
 浏览器打开 `http://<主机>:3077`，首次进入会引导**注册管理员账号**；登录后在「网关 Key」页建一把 API Key 给客户端用 —— `http://<主机>:3077/v1` 即 OpenAI 兼容端点（未建 Key 前拒绝转发）。状态（SQLite 库 / 配置 / 日志）都在 `./data` 一个卷里。
@@ -137,7 +137,7 @@ compose 用户（amd64 / arm64 都有镜像）：
 ```yaml
 services:
   agent3api:
-    image: funwukong/agent3api:latest
+    image: ghcr.io/funwukong/agent3api:latest
     container_name: agent3api
     restart: unless-stopped
     ports:
@@ -159,6 +159,8 @@ services:
 | `WORKBUDDY_UPDATE_REPO` + `WORKBUDDY_UPDATE_API_BASE` | 进阶：把「检查更新 / 下载更新」换成自建源。前者换仓库（默认 `funwukong/agent3api`，即本 fork 自己的发布），后者换 API 根（默认 `https://api.github.com`，需返回与 GitHub 同形的 release JSON）。配了自建源后，下载白名单只额外放行**该源自己的域名**（按源的 scheme：配 `http://` 就允许明文下载，仅建议本地演练/内网镜像用）|
 
 从源码构建：克隆本仓库后 `docker compose up -d --build`（镜像里只有网关与面板，不含 Rust 工具链）。
+
+镜像由 GitHub Actions 构建并发布到 GHCR（`ghcr.io/funwukong/agent3api`），amd64 / arm64 双架构，认证走 Actions 内置的 `GITHUB_TOKEN`，无需配置任何 Docker Hub secret。**GHCR 新包默认私有**：首次推送后要到 [包设置](https://github.com/users/funwukong/packages/container/agent3api/settings) 把 Visibility 改成 Public，否则别人拉取会 403；只在自己机器上拉则 `docker login ghcr.io` 后即可。
 
 **网页端功能差异**（源于「没有本机桌面客户端」）：网页登录（WorkBuddy / Qoder / Cline）、手机验证码、粘贴凭证完全可用；需要本机回调的网页登录（AutoClaw / CatPaw / Accio / CodeArts / Trae）与「导入本机登录态」不可用，请改用粘贴凭证。
 

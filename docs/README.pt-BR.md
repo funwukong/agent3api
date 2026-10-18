@@ -127,7 +127,7 @@ Por padrão o gateway escuta apenas `127.0.0.1`. Ao ativar "Configurações → 
 ```bash
 docker run -d --name agent3api --restart unless-stopped \
   -p 3077:3077 -v ./data:/data \
-  funwukong/agent3api:latest
+  ghcr.io/funwukong/agent3api:latest
 ```
 
 Abra `http://<host>:3077` no navegador: a primeira visita guia o **cadastro do administrador**; depois de entrar, crie uma API key na página "Gateway Keys" para os clientes — `http://<host>:3077/v1` é o endpoint compatível com OpenAI (sem nenhuma chave ele recusa o encaminhamento). Todo o estado (banco SQLite / configuração / logs) fica em um único volume `./data`.
@@ -137,7 +137,7 @@ Para quem usa compose (há imagens amd64 e arm64):
 ```yaml
 services:
   agent3api:
-    image: funwukong/agent3api:latest
+    image: ghcr.io/funwukong/agent3api:latest
     container_name: agent3api
     restart: unless-stopped
     ports:
@@ -159,6 +159,8 @@ Variáveis de ambiente (todas opcionais):
 | `WORKBUDDY_UPDATE_REPO` + `WORKBUDDY_UPDATE_API_BASE` | Avançado: aponte "verificar atualizações / baixar atualizações" para a sua própria fonte. O primeiro troca o repositório (por padrão, o próprio `funwukong/agent3api` deste fork), o segundo troca a raiz da API (padrão `https://api.github.com`; deve devolver um JSON de release no formato do GitHub). Com uma fonte própria configurada, a lista de permissões de download passa a aceitar, além disso, apenas **o próprio host dessa fonte** (o esquema segue a fonte: uma fonte `http://` também permite download em texto puro — só para ensaios locais / espelhos internos) |
 
 Compilar a partir do código: clone o repositório e rode `docker compose up -d --build` (a imagem contém apenas o gateway e o painel, sem toolchain Rust).
+
+A imagem é compilada pelo GitHub Actions e publicada no GHCR (`ghcr.io/funwukong/agent3api`), multi-arquitetura amd64 / arm64. A autenticação usa o `GITHUB_TOKEN` embutido do Actions, então nenhum secret do Docker Hub é necessário. **Pacotes novos no GHCR são privados por padrão**: após o primeiro push, mude Visibility para Public nas [configurações do pacote](https://github.com/users/funwukong/packages/container/agent3api/settings), senão o pull de outras pessoas retorna 403; para a sua própria máquina, `docker login ghcr.io` já basta.
 
 **Diferenças de recursos no painel web** (todas decorrem de "não haver cliente de desktop local"): login pela web (WorkBuddy / Qoder / Cline), código por SMS e credenciais coladas funcionam plenamente; logins pela web que exigem callback nesta máquina (AutoClaw / CatPaw / Accio / CodeArts / Trae) e a "importação do estado de login local" não estão disponíveis — use credenciais coladas.
 

@@ -97,7 +97,7 @@ gh run list --limit 4       # 手动跑 gh 前先设代理，见第 10 节
 bash scripts/release.sh v3.1.0-beta.1
 ```
 
-验收就三条：Release 显示 **Prerelease**、exe / dmg 附件齐全、Docker Hub 上 `:latest` 的
+验收就三条：Release 显示 **Prerelease**、exe / dmg 附件齐全、GHCR 上 `:latest` 的
 Pushed 时间**没有**跟着变（完整清单见第 9 节）。
 
 **三处不能错**，每处错了都有明确症状：
@@ -166,7 +166,7 @@ git push origin vX.Y.Z
 | 工作流 | 产出 | 说明 |
 |---|---|---|
 | `build.yml`（build） | Windows NSIS 安装包 + macOS universal dmg | `macos` / `windows` 两个 job 构建并上传 artifact（macOS 包**只能在 CI 构建**，无法从 Windows 交叉编译）；安装包只挂 artifact，GitHub Release 由本地脚本挂载（见第 8 节） |
-| `docker.yml`（docker） | Docker Hub `funwukong/agent3api:<版本>` + `:latest`（amd64 / arm64 双架构） | 手动 `workflow_dispatch` 触发时只出 `:dev` 测试 tag，不碰正式 tag；beta tag（版本号带 `-`）只出 `<版本>`，**不移动 `:latest`** |
+| `docker.yml`（docker） | GHCR `ghcr.io/funwukong/agent3api:<版本>` + `:latest`（amd64 / arm64 双架构） | 推 `v*` tag 触发；手动 `workflow_dispatch` 触发时只出 `:dev` 测试 tag，不碰正式 tag；beta tag（版本号带 `-`）只出 `<版本>`，**不移动 `:latest`** |
 
 跟踪进度（手动跑 gh 前要先设代理，见第 10 节）：
 
@@ -196,13 +196,13 @@ Release 标成 pre-release（重跑时也会把标记纠正回来），验收提
 ## 9. 验收清单（三处核对）
 
 - [ ] GitHub Release：`gh release view vX.Y.Z`（手动跑 gh 前先设代理，见第 10 节）—— 正文日志齐全，exe / dmg 两个附件都在；
-- [ ] Docker Hub：`funwukong/agent3api` 的 Tags 页出现 `<版本>` 与 `latest`，Pushed 时间一致；
+- [ ] GHCR：`ghcr.io/funwukong/agent3api` 的 Tags 页出现 `<版本>` 与 `latest`，Pushed 时间一致；
 - [ ] 安装包「关于」页版本号与 tag 一致；
-- [ ] 只有 beta 版多一条：Release 显示 **Prerelease**，且 Docker Hub 上 `latest` 没有跟着动（见第 4 节末尾的 beta 版流程）。
+- [ ] 只有 beta 版多一条：Release 显示 **Prerelease**，且 GHCR 上 `latest` 没有跟着动（见第 4 节末尾的 beta 版流程）。
 
 ## 10. 已知坑与排查
 
-- **GHCR 新包默认私有**：若以后镜像改推 GHCR，首次推送后需到包设置手动改 Public（当前推的是 Docker Hub，无此问题）。
+- **GHCR 新包默认私有，首次推送后必须手动改 Public**：镜像推 `ghcr.io/funwukong/agent3api`，认证走 Actions 内置的 `GITHUB_TOKEN`（`permissions: packages: write` + `username: ${{ github.actor }}`），**不需要配任何 secret**。但 GHCR 新建的包默认 Visibility = Private，首次推送成功后要到 `https://github.com/users/funwukong/packages/container/agent3api/settings` 改成 Public，否则别人 `docker pull` 会 403（自己机器上 `docker login ghcr.io` 后可拉）。这一步是一次性的，改完不再需要管。
 - **gh 不读 git 的代理配置，跑 gh 前要先设代理环境变量**：`gh` 是 Go 程序，不读 `~/.gitconfig` 里的 `http(s).proxy`，也不读 Windows 系统代理（WinINET），只认 `HTTPS_PROXY` / `HTTP_PROXY` 环境变量。本机 GitHub 直连时通时不通，手动执行 gh 命令前先设：
 
   ```bash
@@ -216,7 +216,7 @@ Release 标成 pre-release（重跑时也会把标记纠正回来），验收提
 本节是 fork 相对上游的差异记录。第 7–9 节描述的是上游发版流程，fork 实际按本节执行。
 
 - **本机不编译，发版全走 GitHub Actions 云端构建**（2026-10-07 起）：本机 `target/`（约 26GB）与 `desktop-tauri/src-tauri/target`（约 3GB）构建产物已全部删除，后续发版只推 `v*` tag 让云端构建，`scripts/release.sh` 收尾挂 Release。只有本地调试需要时才重新 `cargo check`（依赖重编约 2-3 分钟），平时不要在本机跑构建占磁盘。
-- **CI 与上游的差异**：`build.yml` 只保留 `windows` job（不构建 macOS dmg，上游第 7 节表格里的 macOS 产物 fork 没有）；`docker.yml` 只允许手动 `workflow_dispatch`（发版 tag 不推 Docker Hub 镜像）；`release.sh` 只下载 `windows-nsis` 一个 artifact。
+- **CI 与上游的差异**：`build.yml` 只保留 `windows` job（不构建 macOS dmg，上游第 7 节表格里的 macOS 产物 fork 没有）；`docker.yml` 推 **GHCR**（`ghcr.io/funwukong/agent3api`，用内置 `GITHUB_TOKEN`，无需 secret）而非 Docker Hub，触发方式为 `v*` tag + 手动 `workflow_dispatch`；`release.sh` 只下载 `windows-nsis` 一个 artifact。
 - **合并上游时必须保留的 fork 功能**：CatPaw `tools` 嵌套过深修复（ Responses 入参 anyOf 展平）、ZCode 活动套餐通道，以及上面两条 CI 差异。上游 v2.9.7 已实现 Trae 签到，之后以**上游版**为准，不要再保留 fork 的旧 Trae 签到实现；`trae/checkin.rs`、`auto_checkin.rs`、`billing/checkin.rs` 和前端能力表冲突时优先取上游。
 - **合并验证口径**（2026-10-08 实测）：先跑 `npm --prefix desktop-tauri/ui-islands run build` 重建 `ui/islands/ui.js` / `ui.css`，再跑 `cargo check --workspace` 和 `cargo test --workspace`；验证后删除本机 `desktop-tauri/src-tauri/target`，不要把本地构建产物留在仓库里。
 - **版本号格式**：fork 发版用 `X.Y.Z-fork.N`，`X.Y.Z` 跟随上游当前版本，fork 序号从 1 递增（如上游 2.9.5 → `2.9.5-fork.1`）。改完版本号用 `cargo update -p agent3api-server -p workbuddy-proxy-desktop` 刷新 Cargo.lock，不要在本机跑 `cargo check` 重编 22GB 依赖。
