@@ -61,7 +61,12 @@ RUN { echo '#!/bin/sh -e'; \
     } > /build/cargo-build.sh && chmod +x /build/cargo-build.sh
 
 COPY desktop-tauri/src-tauri/Cargo.toml desktop-tauri/src-tauri/Cargo.lock src-tauri/
-COPY desktop-tauri/src-tauri/server/Cargo.toml src-tauri/server/
+# build.rs 必须一起 COPY：server/src/server/embedded_ui.rs 里有
+# `include!(concat!(env!("OUT_DIR"), "/embedded_ui.rs"))`，而 OUT_DIR 只有
+# cargo 跑了 build script 才会注入。少了它 → `error: environment variable
+# OUT_DIR not defined at compile time` → exit 101（桩层不会暴露，因为桩层的
+# lib.rs 是空的，编不到那个文件）。
+COPY desktop-tauri/src-tauri/server/Cargo.toml desktop-tauri/src-tauri/server/build.rs src-tauri/server/
 RUN mkdir -p src-tauri/server/src/bin src-tauri/src \
     && echo "" > src-tauri/server/src/lib.rs \
     && echo "fn main() {}" > src-tauri/server/src/bin/agent3api-server.rs \

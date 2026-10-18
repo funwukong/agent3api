@@ -202,6 +202,7 @@ Release 标成 pre-release（重跑时也会把标记纠正回来），验收提
 
 ## 10. 已知坑与排查
 
+- **Docker 构建报 `environment variable OUT_DIR not defined at compile time`（exit 101）**：`server/src/server/embedded_ui.rs` 里有一句 `include!(concat!(env!("OUT_DIR"), "/embedded_ui.rs"))`，而 `OUT_DIR` 只有 cargo 跑了 **build script** 才会注入。所以 `server/build.rs` 必须和 `server/Cargo.toml` 一起 COPY 进构建上下文（根 Dockerfile 桩层与源码层都要）—— 漏掉它，桩层照样编得过（桩层的 `lib.rs` 是空的，压根编不到那个文件），**只有第二次真实源码构建才会炸**，表现为 `buildx failed with: failed to build: failed to solve: process "/bin/sh -c cd src-tauri && find server/src -type f -exec touch {} + && /build/cargo-build.sh" did not complete successfully: exit code: 101`。排查时别被「桩层成功」误导：桩层只验证 manifest 与依赖树，不验证源码。
 - **GHCR 新包默认私有，首次推送后必须手动改 Public**：镜像推 `ghcr.io/funwukong/agent3api`，认证走 Actions 内置的 `GITHUB_TOKEN`（`permissions: packages: write` + `username: ${{ github.actor }}`），**不需要配任何 secret**。但 GHCR 新建的包默认 Visibility = Private，首次推送成功后要到 `https://github.com/users/funwukong/packages/container/agent3api/settings` 改成 Public，否则别人 `docker pull` 会 403（自己机器上 `docker login ghcr.io` 后可拉）。这一步是一次性的，改完不再需要管。
 - **gh 不读 git 的代理配置，跑 gh 前要先设代理环境变量**：`gh` 是 Go 程序，不读 `~/.gitconfig` 里的 `http(s).proxy`，也不读 Windows 系统代理（WinINET），只认 `HTTPS_PROXY` / `HTTP_PROXY` 环境变量。本机 GitHub 直连时通时不通，手动执行 gh 命令前先设：
 
