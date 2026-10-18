@@ -1,0 +1,36 @@
+{
+  "name": "agent3api",
+  "version": "3.88.0",
+  "description": "Agent3API - 多提供商本地网关：把 WorkBuddy / 小浣熊 / CatPaw / AutoClaw 等客户端登录态包装成 OpenAI 兼容接口，附带账号管理、出站指纹脱敏与请求报表",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build:icon": "node build/make-icon.mjs",
+    "tauri:install": "npm --prefix desktop-tauri install",
+    "tauri:dev": "npm --prefix desktop-tauri run dev",
+    "tauri:build": "npm --prefix desktop-tauri run build"
+  },
+  "keywords": [
+    "agent3api",
+    "workbuddy",
+    "raccoon",
+    "catpaw",
+    "autoclaw",
+    "codebuddy",
+    "tencent",
+    "api",
+    "proxy",
+    "openai",
+    "sse",
+    "llm"
+  ],
+  "author": "aimod-cc",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/funwukong/agent3api.git"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=18.17.0"
+  }
+}

@@ -1,0 +1,46 @@
+name: build
+
+# Build the Windows NSIS installer as a workflow artifact. Release publication
+# stays separate and is handled by scripts/release.sh after the run finishes.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop-tauri/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop-tauri/src-tauri -> ../../target
+
+      - name: Install desktop dependencies
+        run: npm --prefix desktop-tauri ci
+
+      - name: Build Windows installer
+        run: npm --prefix desktop-tauri run build
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-nsis
+          path: target/release/bundle/nsis/*.exe
+          if-no-files-found: error
